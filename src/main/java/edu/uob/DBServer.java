@@ -5,6 +5,8 @@ import java.net.ServerSocket;
 import java.net.Socket;
 import java.nio.file.Paths;
 import java.nio.file.Files;
+import java.util.ArrayList;
+import java.util.Arrays;
 
 /** This class implements the DB server. */
 public class DBServer {
@@ -14,7 +16,7 @@ public class DBServer {
 
     public static void main(String args[]) throws IOException {
         DBServer server = new DBServer();
-        server.readTabFile("people.tab");
+        Table table = server.readTabFile("people.tab");
         server.blockingListenOn(8888);
     }
 
@@ -42,22 +44,71 @@ public class DBServer {
         return "";
     }
 
-    public void readTabFile(String tableName) throws IOException {
-        File file = new File(storageFolderPath + File.separator + tableName);
+    public Table readTabFile(String filePath) throws IOException {
+        File file = new File(storageFolderPath + File.separator + filePath);
         FileReader reader = new FileReader(file);
         BufferedReader buffReader = new BufferedReader(reader);
 
-        String line;
-        while((line = buffReader.readLine()) != null) {
-            // To replace with inserting into data structure
-            // Add error catching if file not in correct format
-            String[] cols =  line.split("\t");
+        String line = buffReader.readLine(); // Get First Line
 
-            for (String col : cols) {
-                System.out.print(col + "|");
-            }
-            System.out.println();
+        if (line == null) {
+            buffReader.close();
+            throw new MalformedDBFileException.EmptyFile(filePath);
         }
+
+        String[] headers = line.split("\t");
+
+        if (headers.length <= 2) {
+            buffReader.close();
+            throw new MalformedDBFileException.InsufficientColumns(filePath);
+        }
+
+        if (!headers[0].equals("id")) {
+            buffReader.close();
+            throw new MalformedDBFileException.MissingIdColumn(filePath );
+        }
+
+        // Fill in table data structure
+        Table table = new Table(filePath.replace(".tab", ""));
+
+        // Add column names (skip "id" at index 0)
+        for (int i = 1; i < headers.length; i++) {
+            table.getColNames().add(headers[i]);
+        }
+
+        while ((line = buffReader.readLine()) != null) {
+            processRow(line, table);
+        }
+
+        buffReader.close();
+        return table;
+    }
+
+    private void processRow(String line, Table table) throws MalformedDBFileException {
+        /**
+         * Processes a line from a .tab file and adds row to table
+         * Throws a MalformedDBFileException if line does not follow specified format
+         */
+        String[] values = line.split("\t");
+        ArrayList<String> colNames = table.getColNames();
+
+        if (values.length != colNames.size() + 1) {
+            throw new MalformedDBFileException.RowWidthMismatch(values.length - 1, colNames.size());
+        }
+
+        int id;
+        try {
+            id = Integer.parseInt(values[0]);
+        } catch (NumberFormatException e) {
+            throw new MalformedDBFileException.InvalidRowId(values[0]);
+        }
+
+        Row row = new Row(id);
+        for (int i = 0; i < colNames.size(); i++) {
+            row.setValue(colNames.get(i), values[i + 1]);
+        }
+
+        table.addRow(row);
     }
 
     //  === Methods below handle networking aspects of the project - you will not need to change these ! ===
