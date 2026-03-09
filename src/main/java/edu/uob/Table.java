@@ -4,7 +4,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 
 public class Table {
-    private String name;
+    private final String name;
     private ArrayList<String> cols;
     private HashMap<Integer, Row> rows;
     private int nextId;

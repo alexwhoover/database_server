@@ -2,7 +2,7 @@ package edu.uob;
 
 import java.util.HashMap;
 
-public class Row {
+public class  Row {
     private final int id;
     // Maps column name to value
     private HashMap<String, String> values;

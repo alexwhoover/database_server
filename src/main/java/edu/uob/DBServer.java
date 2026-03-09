@@ -65,7 +65,7 @@ public class DBServer {
 
         if (!headers[0].equals("id")) {
             buffReader.close();
-            throw new MalformedDBFileException.MissingIdColumn(filePath );
+            throw new MalformedDBFileException.MissingIdColumn(filePath);
         }
 
         // Fill in table data structure
