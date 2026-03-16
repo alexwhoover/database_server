@@ -1,10 +1,9 @@
 package edu.uob;
 
 import edu.uob.exceptions.MalformedDBFileException;
+import edu.uob.nodes.ASTNode;
 import edu.uob.parse.Lexer;
 import edu.uob.parse.Parser;
-import edu.uob.parse.Query;
-import edu.uob.parse.QueryResult;
 
 import java.io.*;
 import java.net.ServerSocket;
@@ -50,20 +49,7 @@ public class DBServer {
     * <p>This method handles all incoming DB commands and carries out the required actions.
     */
     public String handleCommand(String command) {
-        try {
-            // TODO: Implement Lexer, Parser, and Query execution logic to handle incoming commands
-            List<Lexer.Token> tokens = new Lexer(command).tokenize();
-            Query query = new Parser(tokens).parse();
-            QueryResult result = query.execute(this);
-
-            if (result.hasTable()) {
-                Table t = result.getTable();
-            }
-
-            return result.toResponse();
-        } catch (Exception e) {
-            return "[ERROR]: " + e.getMessage();
-        }
+        return null;
     }
 
     public void loadAllTables() throws IOException {
