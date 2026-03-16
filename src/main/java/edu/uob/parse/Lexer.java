@@ -38,7 +38,7 @@ public class Lexer {
     private int pos;
     private final List<Token> tokens = new ArrayList<>();
 
-    public TokenStream tokenize(String input) {
+    public List<Token> tokenize(String input) {
         this.input = input;
         this.pos = 0;
         tokens.clear();
@@ -113,7 +113,7 @@ public class Lexer {
 
         }
 
-        return new TokenStream(tokens);
+        return tokens;
     }
 
     private void skipWhitespace() {
