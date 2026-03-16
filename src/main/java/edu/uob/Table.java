@@ -28,6 +28,8 @@ public class Table {
         nextId = Math.max(nextId, id + 1);
     }
 
+    public String getName() { return name; }
+
     public int getNextId() {
         return nextId;
     }

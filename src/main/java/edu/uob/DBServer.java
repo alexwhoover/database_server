@@ -1,6 +1,10 @@
 package edu.uob;
 
 import edu.uob.exceptions.MalformedDBFileException;
+import edu.uob.parse.Lexer;
+import edu.uob.parse.Parser;
+import edu.uob.parse.Query;
+import edu.uob.parse.QueryResult;
 
 import java.io.*;
 import java.net.ServerSocket;
@@ -8,6 +12,8 @@ import java.net.Socket;
 import java.nio.file.Paths;
 import java.nio.file.Files;
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
 
 /** This class implements the DB server. */
 public class DBServer {
@@ -15,9 +21,12 @@ public class DBServer {
     private static final char END_OF_TRANSMISSION = 4;
     private String storageFolderPath;
 
+    // Store tables in a hashmap with table name as key
+    private HashMap<String, Table> tables = new HashMap<>();
+
     public static void main(String args[]) throws IOException {
         DBServer server = new DBServer();
-        Table table = server.readTabFile("people.tab");
+        server.loadAllTables();
         server.blockingListenOn(8888);
     }
 
@@ -41,14 +50,45 @@ public class DBServer {
     * <p>This method handles all incoming DB commands and carries out the required actions.
     */
     public String handleCommand(String command) {
-        // TODO implement your server logic here
-        return "";
+        try {
+            // TODO: Implement Lexer, Parser, and Query execution logic to handle incoming commands
+            List<Lexer.Token> tokens = new Lexer(command).tokenize();
+            Query query = new Parser(tokens).parse();
+            QueryResult result = query.execute(this);
+
+            if (result.hasTable()) {
+                Table t = result.getTable();
+            }
+
+            return result.toResponse();
+        } catch (Exception e) {
+            return "[ERROR]: " + e.getMessage();
+        }
+    }
+
+    public void loadAllTables() throws IOException {
+        /*
+         * Loads all .tab files in the storage folder and adds them to the tables hashmap
+         * Throws an IOException if there is an error reading any of the files
+         */
+        File folder = new File(storageFolderPath);
+        File[] files = folder.listFiles((dir, name) -> name.endsWith(".tab"));
+
+        if (files != null) {
+            for (File file : files) {
+                Table table = readTabFile(file.getName());
+                tables.put(table.getName(), table);
+            }
+        }
     }
 
     public Table readTabFile(String filePath) throws IOException {
+        /*
+         * Reads a .tab file of specified format and converts it into a Table object
+         * Returns the Table object, throws an IOException or MalformedDBFileException if error
+         */
         File file = new File(storageFolderPath + File.separator + filePath);
-        FileReader reader = new FileReader(file);
-        BufferedReader buffReader = new BufferedReader(reader);
+        BufferedReader buffReader = new BufferedReader(new FileReader(file));
 
         String line = buffReader.readLine(); // Get First Line
 
@@ -86,7 +126,7 @@ public class DBServer {
     }
 
     private void processRow(String line, Table table) throws MalformedDBFileException {
-        /**
+        /*
          * Processes a line from a .tab file and adds row to table
          * Throws a MalformedDBFileException if line does not follow specified format
          */
