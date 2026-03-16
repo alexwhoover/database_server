@@ -1,4 +1,4 @@
-package edu.uob;
+package edu.uob.exceptions;
 import java.io.IOException;
 
 public class MalformedDBFileException extends IOException {
