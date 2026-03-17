@@ -1,9 +1,6 @@
 package edu.uob;
 
 import edu.uob.exceptions.MalformedDBFileException;
-import edu.uob.nodes.ASTNode;
-import edu.uob.parse.Lexer;
-import edu.uob.parse.Parser;
 
 import java.io.*;
 import java.net.ServerSocket;
