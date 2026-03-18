@@ -1,16 +1,14 @@
-package edu.uob;
+package edu.uob.ds;
 
 import java.util.*;
 import java.util.function.Predicate;
 
 public class Table {
-    private final String name;
     private ArrayList<String> cols;
     private HashMap<Integer, Row> rows;
     private int nextId;
 
-    public Table(String name) {
-        this.name = name;
+    public Table() {
         this.cols = new ArrayList<>();
         this.rows = new HashMap<>();
         this.nextId = 1;
@@ -23,21 +21,18 @@ public class Table {
         cols.add(colName);
     }
 
-    public int addRow(Row row) {
-        int id = nextId++;
+    public void addRow(int id, Row row) {
         rows.put(id, row);
-        return id;
+        nextId = Math.max(nextId, id + 1);
     }
 
     public Row getRow(int id) {
         return rows.get(id);
     }
 
-    public String getName() {
-        return name;
-    }
+    public Set<Integer> getRowIds() { return rows.keySet(); }
 
-    public Collection<Row> getRows() {
+    public Collection<Row> getRowValues() {
         return rows.values();
     }
 
@@ -54,7 +49,7 @@ public class Table {
          * Example usage:
          *   Table adults = students.filter(row -> Integer.parseInt(row.getValue("age")) >= 18);
          */
-        Table result = new Table(this.name);
+        Table result = new Table();
 
         for (String col : cols) {
             result.addCol(col);
@@ -88,7 +83,7 @@ public class Table {
             }
         }
 
-        Table result = new Table(this.name);
+        Table result = new Table();
         for (String col : selectedCols) {
             result.addCol(col);
         }

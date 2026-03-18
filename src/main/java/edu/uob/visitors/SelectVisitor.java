@@ -1,6 +1,6 @@
 package edu.uob.visitors;
 
-import edu.uob.Table;
+import edu.uob.ds.Table;
 import edu.uob.nodes.BranchNode;
 import edu.uob.nodes.LeafNode;
 

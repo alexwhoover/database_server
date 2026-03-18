@@ -1,24 +1,21 @@
 package edu.uob;
 
-import edu.uob.exceptions.MalformedDBFileException;
+import edu.uob.ds.Database;
 
 import java.io.*;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.nio.file.Paths;
 import java.nio.file.Files;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
 
 /** This class implements the DB server. */
 public class DBServer {
 
     private static final char END_OF_TRANSMISSION = 4;
     private String storageFolderPath;
-
-    // Store tables in a hashmap with table name as key
-    private HashMap<String, Table> tables = new HashMap<>();
+    private Reader reader;
+    private Writer writer;
+    private String currDBName;
 
     public static void main(String args[]) throws IOException {
         DBServer server = new DBServer();
@@ -29,7 +26,8 @@ public class DBServer {
     * KEEP this signature otherwise we won't be able to mark your submission correctly.
     */
     public DBServer() {
-        storageFolderPath = Paths.get("databases").toAbsolutePath().toString();
+        this.storageFolderPath = Paths.get("databases").toAbsolutePath().toString();
+        this.currDBName = null;
         try {
             // Create the database storage folder if it doesn't already exist !
             Files.createDirectories(Paths.get(storageFolderPath));
@@ -64,75 +62,7 @@ public class DBServer {
 //        }
 //    }
 
-//    public Table readTabFile(String filePath) throws IOException {
-//        /*
-//         * Reads a .tab file of specified format and converts it into a Table object
-//         * Returns the Table object, throws an IOException or MalformedDBFileException if error
-//         */
-//        File file = new File(storageFolderPath + File.separator + filePath);
-//        BufferedReader buffReader = new BufferedReader(new FileReader(file));
-//
-//        String line = buffReader.readLine(); // Get First Line
-//
-//        if (line == null) {
-//            buffReader.close();
-//            throw new MalformedDBFileException.EmptyFile(filePath);
-//        }
-//
-//        String[] headers = line.split("\t");
-//
-//        if (headers.length <= 2) {
-//            buffReader.close();
-//            throw new MalformedDBFileException.InsufficientColumns(filePath);
-//        }
-//
-//        if (!headers[0].equals("id")) {
-//            buffReader.close();
-//            throw new MalformedDBFileException.MissingIdColumn(filePath);
-//        }
-//
-//        // Fill in table data structure
-//        Table table = new Table(filePath.replace(".tab", ""));
-//
-//        // Add column names (skip "id" at index 0)
-//        for (int i = 1; i < headers.length; i++) {
-//            table.getColNames().add(headers[i]);
-//        }
-//
-//        while ((line = buffReader.readLine()) != null) {
-//            processRow(line, table);
-//        }
-//
-//        buffReader.close();
-//        return table;
-//    }
-//
-//    private void processRow(String line, Table table) throws MalformedDBFileException {
-//        /*
-//         * Processes a line from a .tab file and adds row to table
-//         * Throws a MalformedDBFileException if line does not follow specified format
-//         */
-//        String[] values = line.split("\t");
-//        List<String> colNames = table.getColNames();
-//
-//        if (values.length != colNames.size() + 1) {
-//            throw new MalformedDBFileException.RowWidthMismatch(values.length - 1, colNames.size());
-//        }
-//
-//        int id;
-//        try {
-//            id = Integer.parseInt(values[0]);
-//        } catch (NumberFormatException e) {
-//            throw new MalformedDBFileException.InvalidRowId(values[0]);
-//        }
-//
-//        Row row = new Row(id);
-//        for (int i = 0; i < colNames.size(); i++) {
-//            row.setValue(colNames.get(i), values[i + 1]);
-//        }
-//
-//        table.addRow(row);
-//    }
+
 
     //  === Methods below handle networking aspects of the project - you will not need to change these ! ===
 
