@@ -1,7 +1,7 @@
 package edu.uob;
 
-import java.util.ArrayList;
-import java.util.HashMap;
+import java.util.*;
+import java.util.function.Predicate;
 
 public class Table {
     private final String name;
@@ -13,28 +13,99 @@ public class Table {
         this.name = name;
         this.cols = new ArrayList<>();
         this.rows = new HashMap<>();
-        this.nextId = 0;
+        this.nextId = 1;
     }
 
-    public void addRow(Row row) {
-        int id = row.getId();
-        if (rows.containsKey(id)) {
-            throw new IllegalArgumentException("Row ID already exists: " + id);
+    public void addCol(String colName) {
+        if (cols.contains(colName)) {
+            throw new IllegalArgumentException("Column already exists: " + colName);
+        }
+        cols.add(colName);
+    }
+
+    public int addRow(Row row) {
+        int id = nextId++;
+        rows.put(id, row);
+        return id;
+    }
+
+    public Row getRow(int id) {
+        return rows.get(id);
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public Collection<Row> getRows() {
+        return rows.values();
+    }
+
+    public List<String> getColNames() {
+        return cols;
+    }
+
+    public Table filter(Predicate<Row> predicate) {
+        /*
+         * Returns a new table containing only the rows that satisfy the given predicate.
+         * The original table is not modified. Original row IDs are preserved in the result.
+         * All columns from the original table are carried over.
+         *
+         * Example usage:
+         *   Table adults = students.filter(row -> Integer.parseInt(row.getValue("age")) >= 18);
+         */
+        Table result = new Table(this.name);
+
+        for (String col : cols) {
+            result.addCol(col);
         }
 
-        rows.put(id, row);
+        for (Map.Entry<Integer, Row> entry : rows.entrySet()) {
+            int id = entry.getKey();
+            Row row = entry.getValue();
 
-        // If the inserted row has an ID larger than the current ID, set the current ID to be one larger
-        nextId = Math.max(nextId, id + 1);
+            if (predicate.test(row)) {
+                result.rows.put(id, new Row(row.getValues()));
+                result.nextId = Math.max(result.nextId, id + 1);
+            }
+        }
+
+        return result;
     }
 
-    public String getName() { return name; }
+    public Table project(List<String> selectedCols) {
+        /*
+         * Returns a new table containing only the specified columns, in the order given.
+         * The original table is not modified. All rows are carried over, projected down
+         * to only the selected columns. Original row IDs are preserved.
+         *
+         * Example usage:
+         *   Table nameAndAge = students.project(List.of("name", "age"));
+         */
+        for (String col : selectedCols) {
+            if (!cols.contains(col)) {
+                throw new IllegalArgumentException("Column not found: " + col);
+            }
+        }
 
-    public int getNextId() {
-        return nextId;
-    }
+        Table result = new Table(this.name);
+        for (String col : selectedCols) {
+            result.addCol(col);
+        }
 
-    public ArrayList<String> getColNames() {
-        return cols;
+        for (Map.Entry<Integer, Row> entry : rows.entrySet()) {
+            int id = entry.getKey();
+            Row row = entry.getValue();
+
+            Row projected = new Row();
+            for (String col : selectedCols) {
+                projected.setValue(col, row.getValue(col));
+            }
+
+            result.rows.put(id, projected);
+            result.nextId = Math.max(result.nextId, id + 1);
+        }
+
+        return result;
     }
 }
