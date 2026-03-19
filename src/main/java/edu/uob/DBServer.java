@@ -46,23 +46,13 @@ public class DBServer {
         return null;
     }
 
-//    public void loadAllTables() throws IOException {
-//        /*
-//         * Loads all .tab files in the storage folder and adds them to the tables hashmap
-//         * Throws an IOException if there is an error reading any of the files
-//         */
-//        File folder = new File(storageFolderPath);
-//        File[] files = folder.listFiles((dir, name) -> name.endsWith(".tab"));
-//
-//        if (files != null) {
-//            for (File file : files) {
-//                Table table = readTabFile(file.getName());
-//                tables.put(table.getName(), table);
-//            }
-//        }
-//    }
+    public void setDatabaseName(String dbName) {
+        this.currDBName = dbName;
+    }
 
-
+    public String getDatabaseName() {
+        return currDBName;
+    }
 
     //  === Methods below handle networking aspects of the project - you will not need to change these ! ===
 
