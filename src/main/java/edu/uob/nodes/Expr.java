@@ -4,6 +4,7 @@ import edu.uob.visitors.ExprVisitor;
 
 public abstract class Expr {
     public abstract <T> T accept(ExprVisitor<T> v);
+    public abstract boolean equals(Object o);
 
     public static class Binary extends Expr {
         public enum Op {
@@ -24,6 +25,17 @@ public abstract class Expr {
         public <T> T accept(ExprVisitor<T> v) {
             return v.visit(this);
         }
+
+        @Override
+        public boolean equals(Object o) {
+            if (o == null) return false;
+            if (o.getClass() != this.getClass()) return false;
+            Expr.Binary other = (Expr.Binary) o;
+
+            return this.left.equals(other.left)
+                    && this.op == other.op
+                    && this.right.equals(other.right);
+        }
     }
 
     public static class Attr extends Expr {
@@ -37,11 +49,18 @@ public abstract class Expr {
         public <T> T accept(ExprVisitor<T> v) {
             return v.visit(this);
         }
+
+        @Override
+        public boolean equals(Object o) {
+            if (o == null) return false;
+            if (o.getClass() != this.getClass()) return false;
+            Expr.Attr other = (Expr.Attr) o;
+
+            return this.attrName.equals(other.attrName);
+        }
     }
 
     public static class Literal extends Expr {
-        //
-        // Will need to update parser to use ex. Integer.parseInt
         public final Object value;
 
         public Literal(Object value) {
@@ -51,6 +70,15 @@ public abstract class Expr {
         @Override
         public <T> T accept(ExprVisitor<T> v) {
             return v.visit(this);
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (o == null) return false;
+            if (o.getClass() != this.getClass()) return false;
+            Expr.Literal other = (Expr.Literal) o;
+
+            return this.value.equals(other.value);
         }
     }
 }

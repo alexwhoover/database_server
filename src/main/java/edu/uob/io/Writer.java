@@ -21,23 +21,7 @@ public class Writer {
         File tableFile = new File(dbFolder, tableName + ".tab");
 
         try (BufferedWriter buffWriter = new BufferedWriter(new FileWriter(tableFile))) {
-            List<String> colNames = table.getColNames();
-
-            // Write header row
-            buffWriter.write("id");
-            for (String col : colNames) {
-                buffWriter.write("\t" + col);
-            }
-            buffWriter.newLine();
-
-            // Write data rows
-            for (int id : table.getRowIds()) {
-                buffWriter.write(String.valueOf(id));
-                for (String col : colNames) {
-                    buffWriter.write("\t" + table.getRow(id).getValue(col));
-                }
-                buffWriter.newLine();
-            }
+            buffWriter.write(table.toTabString());
         }
     }
 
@@ -45,7 +29,7 @@ public class Writer {
         /*
          * Creates a new database folder inside the storage folder.
          */
-        new File(storageFolder, databaseName).mkdirs();
+        new File(storageFolder, databaseName).mkdir();
     }
 
     public static void deleteTable(File dbFolder, String tableName) {

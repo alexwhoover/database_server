@@ -103,4 +103,27 @@ public class Table {
 
         return result;
     }
+
+    public String toTabString() {
+        StringBuilder sb = new StringBuilder();
+
+        // Header row
+        sb.append("id");
+        for (String col : cols) {
+            sb.append("\t").append(col);
+        }
+        sb.append("\n");
+
+        // Data rows
+        for (Map.Entry<Integer, Row> entry : rows.entrySet()) {
+            int id = entry.getKey();
+            sb.append(id);
+            for (String col : cols) {
+                sb.append("\t").append(entry.getValue().getValue(col));
+            }
+            sb.append("\n");
+        }
+
+        return sb.toString();
+    }
 }

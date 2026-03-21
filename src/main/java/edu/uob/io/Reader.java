@@ -4,12 +4,16 @@ import edu.uob.ds.Row;
 import edu.uob.ds.Table;
 import edu.uob.exceptions.MalformedDBFileException;
 
-import java.io.*;
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileReader;
+import java.io.IOException;
+import java.io.FileNotFoundException;
 import java.util.ArrayList;
 import java.util.List;
 
 public class Reader {
-    public static Table readTable(File dbFolder, String tableName) throws IOException, MalformedDBFileException {
+    public static Table readTable(File dbFolder, String tableName) throws IOException {
         /*
          * Reads a .tab file of specified format and converts it into a Table object
          * Returns the Table object, or null if file not found

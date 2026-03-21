@@ -1,21 +1,25 @@
 package edu.uob;
 
-import edu.uob.ds.Database;
+import edu.uob.nodes.Stmt;
+import edu.uob.parse.Lexer;
+import edu.uob.parse.Parser;
+import edu.uob.parse.Token;
+import edu.uob.parse.TokenStream;
+import edu.uob.visitors.ExecuteStmtVisitor;
 
 import java.io.*;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.nio.file.Paths;
 import java.nio.file.Files;
+import java.util.List;
 
 /** This class implements the DB server. */
 public class DBServer {
 
     private static final char END_OF_TRANSMISSION = 4;
     private String storageFolderPath;
-    private Reader reader;
-    private Writer writer;
-    private String currDBName;
+    private String currDatabaseName;
 
     public static void main(String args[]) throws IOException {
         DBServer server = new DBServer();
@@ -27,7 +31,7 @@ public class DBServer {
     */
     public DBServer() {
         this.storageFolderPath = Paths.get("databases").toAbsolutePath().toString();
-        this.currDBName = null;
+        this.currDatabaseName = null;
         try {
             // Create the database storage folder if it doesn't already exist !
             Files.createDirectories(Paths.get(storageFolderPath));
@@ -43,15 +47,31 @@ public class DBServer {
     * <p>This method handles all incoming DB commands and carries out the required actions.
     */
     public String handleCommand(String command) {
-        return null;
+        // Tokenize command
+        Lexer lexer = new Lexer();
+        List<Token> tokens = lexer.tokenize(command);
+
+        // Parse command into statement data structure
+        Stmt stmt = new Parser().parse(new TokenStream(tokens));
+
+        // Execute statement and return response
+        return stmt.accept(new ExecuteStmtVisitor(this));
     }
 
-    public void setDatabaseName(String dbName) {
-        this.currDBName = dbName;
+    public void setDatabaseName(String databaseName) {
+        this.currDatabaseName = databaseName;
     }
 
     public String getDatabaseName() {
-        return currDBName;
+        return currDatabaseName;
+    }
+
+    public File getStorageFolder() {
+        return new File(storageFolderPath);
+    }
+
+    public File getDatabaseFolder() {
+        return new File(storageFolderPath, currDatabaseName);
     }
 
     //  === Methods below handle networking aspects of the project - you will not need to change these ! ===
