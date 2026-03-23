@@ -26,6 +26,7 @@ public class PredicateExprVisitor implements ExprVisitor<BiPredicate<Integer, Ro
 
     @Override
     public BiPredicate<Integer, Row> visit(Expr.Binary expr) {
+        // Recurse down Binary expressions
         if (expr.op == Expr.Binary.Op.AND) {
             BiPredicate<Integer, Row> left = expr.left.accept(this);
             BiPredicate<Integer, Row> right = expr.right.accept(this);

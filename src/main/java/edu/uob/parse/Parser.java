@@ -33,6 +33,8 @@ public class Parser {
             case ALTER    -> parseAlter();
             case INSERT   -> parseInsert();
             case SELECT   -> parseSelect();
+            case UPDATE   -> parseUpdate();
+            case DELETE   -> parseDelete();
             default       -> throw new ParseException(
                     "Expected a command keyword, got " + t.toString()
             );
@@ -193,6 +195,41 @@ public class Parser {
         return new Stmt.Select(tableName, attributeList, null);
     }
 
+    private Stmt parseUpdate() {
+        /*
+         * <Update> ::= "UPDATE " [TableName] " SET " <NameValueList> " WHERE " <Condition>
+         * <NameValueList> ::= <NameValuePair> | <NameValuePair> "," <NameValueList>
+         * <NameValuePair> ::= [AttributeName] "=" [Value]
+         *
+         * Stmt.Update
+         * -> String tableName
+         * -> List<NameValuePair> nameValueList
+         * -> Expr condition
+         */
+        stream.expect(Token.TokenType.UPDATE);
+        String tableName = parseIdentifier();
+        stream.expect(Token.TokenType.SET);
+        List<NameValuePair> nameValueList = parseNameValueList();
+        stream.expect(Token.TokenType.WHERE);
+        Expr condition = parseCondition();
+        return new Stmt.Update(tableName, nameValueList, condition);
+    }
+
+    private Stmt parseDelete() {
+        /*
+         * DELETE FROM <TableName> WHERE <Condition>
+         * Stmt.Delete
+         * -> String tableName
+         * -> Expr condition
+         */
+        stream.expect(Token.TokenType.DELETE);
+        stream.expect(Token.TokenType.FROM);
+        String tableName = parseIdentifier();
+        stream.expect(Token.TokenType.WHERE);
+        Expr condition = parseCondition();
+        return new Stmt.Delete(tableName, condition);
+    }
+
     // ---- PRIVATE HELPERS ----
     private String parseIdentifier() {
         Token t = stream.expect(Token.TokenType.IDENTIFIER);
@@ -296,5 +333,24 @@ public class Parser {
         }
 
         return valueList;
+    }
+
+    private List<NameValuePair> parseNameValueList() {
+        // <NameValueList> ::= <NameValuePair> | <NameValuePair> "," <NameValueList>
+        List<NameValuePair> list = new ArrayList<>();
+        list.add(parseNameValuePair());
+        while (stream.peek().getType() == Token.TokenType.COMMA) {
+            stream.expect(Token.TokenType.COMMA);
+            list.add(parseNameValuePair());
+        }
+        return list;
+    }
+
+    private NameValuePair parseNameValuePair() {
+        // <NameValuePair> ::= [AttributeName] "=" [Value]
+        String attributeName = parseIdentifier();
+        stream.expect(Token.TokenType.ASSIGN);
+        Expr.Literal value = parseLiteral();
+        return new NameValuePair(attributeName, value);
     }
 }

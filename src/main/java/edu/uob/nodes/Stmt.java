@@ -1,5 +1,6 @@
 package edu.uob.nodes;
 
+import edu.uob.parse.NameValuePair;
 import edu.uob.visitors.StmtVisitor;
 
 import java.util.List;
@@ -191,6 +192,57 @@ public abstract class Stmt {
             Stmt.Insert other = (Stmt.Insert) o;
             return this.tableName.equals(other.tableName) &&
                     this.valueList.equals(other.valueList);
+        }
+    }
+
+    public static class Update extends Stmt {
+        public final String tableName;
+        public final List<NameValuePair> nameValueList;
+        public final Expr condition;
+
+        public Update(String tableName, List<NameValuePair> nameValueList, Expr condition) {
+            this.tableName = tableName;
+            this.nameValueList = nameValueList;
+            this.condition = condition;
+        }
+
+        @Override
+        public <T> T accept(StmtVisitor<T> v) {
+            return v.visit(this);
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (o == null) return false;
+            if (o.getClass() != this.getClass()) return false;
+            Stmt.Update other = (Stmt.Update) o;
+            return this.tableName.equals(other.tableName)
+                    && this.nameValueList.equals(other.nameValueList)
+                    && Objects.equals(this.condition, other.condition);
+        }
+    }
+
+    public static class Delete extends Stmt {
+        public final String tableName;
+        public final Expr condition;
+
+        public Delete(String tableName, Expr condition) {
+            this.tableName = tableName;
+            this.condition = condition;
+        }
+
+        @Override
+        public <T> T accept(StmtVisitor<T> v) {
+            return v.visit(this);
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (o == null) return false;
+            if (o.getClass() != this.getClass()) return false;
+            Stmt.Delete other = (Stmt.Delete) o;
+            return this.tableName.equals(other.tableName)
+                    && Objects.equals(this.condition, other.condition);
         }
     }
 }

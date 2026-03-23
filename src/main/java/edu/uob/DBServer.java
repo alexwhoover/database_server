@@ -1,5 +1,6 @@
 package edu.uob;
 
+import edu.uob.exceptions.ParseException;
 import edu.uob.nodes.Stmt;
 import edu.uob.parse.Lexer;
 import edu.uob.parse.Parser;
@@ -47,15 +48,15 @@ public class DBServer {
     * <p>This method handles all incoming DB commands and carries out the required actions.
     */
     public String handleCommand(String command) {
-        // Tokenize command
-        Lexer lexer = new Lexer();
-        List<Token> tokens = lexer.tokenize(command);
-
-        // Parse command into statement data structure
-        Stmt stmt = new Parser().parse(new TokenStream(tokens));
-
-        // Execute statement and return response
-        return stmt.accept(new ExecuteStmtVisitor(this));
+        try {
+            TokenStream stream = new TokenStream(new Lexer().tokenize(command));
+            Stmt stmt = new Parser().parse(stream);
+            return stmt.accept(new ExecuteStmtVisitor(this));
+        } catch (ParseException e) {
+            return "[ERROR] " + e.getMessage();
+        } catch (Exception e) {
+            return "[ERROR] Unexpected error: " + e.getMessage();
+        }
     }
 
     public void setDatabaseName(String databaseName) {
@@ -71,6 +72,9 @@ public class DBServer {
     }
 
     public File getDatabaseFolder() {
+        if (currDatabaseName == null) {
+            throw new IllegalStateException("No database selected. Use 'USE <database>;' first.");
+        }
         return new File(storageFolderPath, currDatabaseName);
     }
 

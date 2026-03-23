@@ -11,6 +11,6 @@ public interface StmtVisitor<T> {
     T visit(Stmt.Select stmt);
     T visit(Stmt.Alter stmt);
     T visit(Stmt.Insert stmt);
-//    T visit(Stmt.Update stmt);
-//    T visit(Stmt.Delete stmt);
+    T visit(Stmt.Delete stmt);
+    T visit(Stmt.Update stmt);
 }

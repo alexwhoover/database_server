@@ -36,6 +36,10 @@ public class Table {
         nextId = Math.max(nextId, id + 1);
     }
 
+    public void removeRow(Integer id) {
+        rows.remove(id);
+    }
+
     public Row getRow(int id) {
         return rows.get(id);
     }

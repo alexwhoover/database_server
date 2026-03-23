@@ -5,9 +5,11 @@ import edu.uob.ds.Row;
 import edu.uob.ds.Table;
 import edu.uob.nodes.Stmt;
 import edu.uob.io.*;
+import edu.uob.parse.NameValuePair;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.function.BiPredicate;
 import java.util.function.Predicate;
@@ -39,6 +41,12 @@ public class ExecuteStmtVisitor implements StmtVisitor<String> {
 
     @Override
     public String visit(Stmt.CreateTable stmt) {
+        File dbFolder;
+        try {
+            dbFolder = server.getDatabaseFolder();
+        } catch (IllegalStateException e) {
+            return "[ERROR] " + e.getMessage();
+        }
         Table table = new Table();
 
         if (stmt.attributeList != null) {
@@ -48,7 +56,7 @@ public class ExecuteStmtVisitor implements StmtVisitor<String> {
         }
 
         try {
-            Writer.writeTable(server.getDatabaseFolder(), stmt.tableName, table);
+            Writer.writeTable(dbFolder, stmt.tableName, table);
         } catch (IOException e) {
             return "[ERROR] File could not be opened for write for table " + stmt.tableName;
         }
@@ -57,15 +65,28 @@ public class ExecuteStmtVisitor implements StmtVisitor<String> {
 
     @Override
     public String visit(Stmt.DropTable stmt) {
-        Writer.deleteTable(server.getDatabaseFolder(), stmt.tableName);
+        File dbFolder;
+        try {
+            dbFolder = server.getDatabaseFolder();
+        } catch (IllegalStateException e) {
+            return "[ERROR] " + e.getMessage();
+        }
+        Writer.deleteTable(dbFolder, stmt.tableName);
         return "[OK]";
     }
 
     @Override
     public String visit(Stmt.Select stmt) {
-        File dbFolder = server.getDatabaseFolder();
+        File dbFolder;
+        try {
+            dbFolder = server.getDatabaseFolder();
+        } catch (IllegalStateException e) {
+            return "[ERROR] " + e.getMessage();
+        }
         List<String> availTables = Reader.readTableNames(dbFolder);
-        if (!availTables.contains(stmt.tableName)) return null;
+        if (!availTables.contains(stmt.tableName)) {
+            return "[ERROR] Table '" + stmt.tableName + "' does not exist.";
+        }
 
         Table raw;
         try {
@@ -105,7 +126,12 @@ public class ExecuteStmtVisitor implements StmtVisitor<String> {
 
     @Override
     public String visit(Stmt.Alter stmt) {
-        File dbFolder = server.getDatabaseFolder();
+        File dbFolder;
+        try {
+            dbFolder = server.getDatabaseFolder();
+        } catch (IllegalStateException e) {
+            return "[ERROR] " + e.getMessage();
+        }
         List<String> availTables = Reader.readTableNames(dbFolder);
         if (!availTables.contains(stmt.tableName)) {
             return "[ERROR] Table '" + stmt.tableName + "' does not exist.";
@@ -145,7 +171,12 @@ public class ExecuteStmtVisitor implements StmtVisitor<String> {
 
     @Override
     public String visit(Stmt.Insert stmt) {
-        File dbFolder = server.getDatabaseFolder();
+        File dbFolder;
+        try {
+            dbFolder = server.getDatabaseFolder();
+        } catch (IllegalStateException e) {
+            return "[ERROR] " + e.getMessage();
+        }
         List<String> availTables = Reader.readTableNames(dbFolder);
         if (!availTables.contains(stmt.tableName)) {
             return "[ERROR] Table '" + stmt.tableName + "' does not exist.";
@@ -176,6 +207,118 @@ public class ExecuteStmtVisitor implements StmtVisitor<String> {
         }
 
         table.addRow(table.getNextId(), row);
+
+        try {
+            Writer.writeTable(dbFolder, stmt.tableName, table);
+        } catch (IOException e) {
+            return "[ERROR] " + e.getMessage();
+        }
+
+        return "[OK]";
+    }
+
+    @Override
+    public String visit(Stmt.Update stmt) {
+        File dbFolder;
+        try {
+            dbFolder = server.getDatabaseFolder();
+        } catch (IllegalStateException e) {
+            return "[ERROR] " + e.getMessage();
+        }
+        List<String> availTables = Reader.readTableNames(dbFolder);
+        if (!availTables.contains(stmt.tableName)) {
+            return "[ERROR] Table '" + stmt.tableName + "' does not exist.";
+        }
+
+        Table table;
+        try {
+            table = Reader.readTable(dbFolder, stmt.tableName);
+        } catch (IOException e) {
+            return "[ERROR] " + e.getMessage();
+        }
+
+        if (table == null) {
+            return "[ERROR] Table '" + stmt.tableName + "' does not exist.";
+        }
+
+        // Validate all pairs before applying any changes
+        for (NameValuePair pair : stmt.nameValueList) {
+            if (pair.attributeName.equals("id")) {
+                return "[ERROR] Cannot update 'id' column.";
+            }
+            if (!table.getColNames().contains(pair.attributeName)) {
+                return "[ERROR] Column '" + pair.attributeName + "' does not exist in table '" + stmt.tableName + "'.";
+            }
+        }
+
+        BiPredicate<Integer, Row> predicate;
+        try {
+            predicate = stmt.condition.accept(new PredicateExprVisitor());
+        } catch (Exception e) {
+            return "[ERROR] Invalid WHERE condition: " + e.getMessage();
+        }
+
+        for (Integer id : table.getRowIds()) {
+            Row row = table.getRow(id);
+            if (predicate.test(id, row)) {
+                for (NameValuePair pair : stmt.nameValueList) {
+                    String newValue = pair.value.value;
+                    row.setValue(pair.attributeName, newValue);
+                }
+            }
+        }
+
+        try {
+            Writer.writeTable(dbFolder, stmt.tableName, table);
+        } catch (IOException e) {
+            return "[ERROR] " + e.getMessage();
+        }
+
+        return "[OK]";
+    }
+
+    @Override
+    public String visit(Stmt.Delete stmt) {
+        File dbFolder;
+        try {
+            dbFolder = server.getDatabaseFolder();
+        } catch (IllegalStateException e) {
+            return "[ERROR] " + e.getMessage();
+        }
+        List<String> availTables = Reader.readTableNames(dbFolder);
+        if (!availTables.contains(stmt.tableName)) {
+            return "[ERROR] Table '" + stmt.tableName + "' does not exist.";
+        }
+
+        Table table;
+        try {
+            table = Reader.readTable(dbFolder, stmt.tableName);
+        } catch (IOException e) {
+            return "[ERROR] " + e.getMessage();
+        }
+
+        if (table == null) {
+            return "[ERROR] Table '" + stmt.tableName + "' does not exist.";
+        }
+
+        BiPredicate<Integer, Row> predicate;
+        try {
+            predicate = stmt.condition.accept(new PredicateExprVisitor());
+        } catch (Exception e) {
+            return "[ERROR] Invalid WHERE condition: " + e.getMessage();
+        }
+
+        // Collect ids to delete first to avoid modifying the map while iterating
+        List<Integer> toDelete = new ArrayList<>();
+        for (Integer id : table.getRowIds()) {
+            if (predicate.test(id, table.getRow(id))) {
+                toDelete.add(id);
+            }
+        }
+
+        for (Integer id : toDelete) {
+            table.removeRow(id);
+        }
 
         try {
             Writer.writeTable(dbFolder, stmt.tableName, table);

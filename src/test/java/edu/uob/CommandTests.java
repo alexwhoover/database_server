@@ -135,4 +135,61 @@ public class CommandTests {
         // Cleanup
         sendCommandToServer("DROP DATABASE testdb;");
     }
+
+    @Test
+    void testDelete() {
+        sendCommandToServer("CREATE DATABASE testdb;");
+        sendCommandToServer("USE testdb;");
+        sendCommandToServer("CREATE TABLE people (name, age, active);");
+        sendCommandToServer("INSERT INTO people VALUES ('Alice', 30, TRUE);");
+        sendCommandToServer("INSERT INTO people VALUES ('Bob', 17, FALSE);");
+        sendCommandToServer("INSERT INTO people VALUES ('Charlie', 25, TRUE);");
+        sendCommandToServer("INSERT INTO people VALUES ('Diana', 17, TRUE);");
+
+        // Basic delete
+        sendCommandToServer("DELETE FROM people WHERE name == 'Bob';");
+        String response = sendCommandToServer("SELECT * FROM people;");
+        assertFalse(response.contains("Bob"));
+        assertTrue(response.contains("Alice"));
+
+        // Delete with AND - only Diana matches (17 AND active)
+        sendCommandToServer("DELETE FROM people WHERE age == 17 AND active == TRUE;");
+        response = sendCommandToServer("SELECT * FROM people;");
+        assertFalse(response.contains("Diana"));
+        assertTrue(response.contains("Alice"));
+        assertTrue(response.contains("Charlie"));
+
+        // Delete non-matching condition - no rows should be removed
+        sendCommandToServer("DELETE FROM people WHERE age == 999;");
+        response = sendCommandToServer("SELECT * FROM people;");
+        assertTrue(response.contains("Alice"));
+        assertTrue(response.contains("Charlie"));
+
+        sendCommandToServer("DROP DATABASE testdb;");
+    }
+
+    @Test
+    void testUpdate() {
+        sendCommandToServer("CREATE DATABASE testdb;");
+        sendCommandToServer("USE testdb;");
+        sendCommandToServer("CREATE TABLE people (name, age);");
+        sendCommandToServer("INSERT INTO people VALUES ('Alice', 30);");
+        sendCommandToServer("INSERT INTO people VALUES ('Bob', 17);");
+
+        // Basic update
+        sendCommandToServer("UPDATE people SET age = 18 WHERE name == 'Bob';");
+        String response = sendCommandToServer("SELECT * FROM people WHERE name == 'Bob';");
+        assertTrue(response.contains("18"));
+        assertFalse(response.contains("17"));
+
+        // Update should not affect other rows
+        response = sendCommandToServer("SELECT * FROM people WHERE name == 'Alice';");
+        assertTrue(response.contains("30"));
+
+        // Cannot update id
+        response = sendCommandToServer("UPDATE people SET id = 99 WHERE name == 'Alice';");
+        assertTrue(response.startsWith("[ERROR]"));
+
+        sendCommandToServer("DROP DATABASE testdb;");
+    }
 }
