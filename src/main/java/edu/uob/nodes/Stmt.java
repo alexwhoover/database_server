@@ -169,4 +169,28 @@ public abstract class Stmt {
                     this.attributeName.equals(other.attributeName);
         }
     }
+
+    public static class Insert extends Stmt {
+        public final String tableName;
+        public final List<Expr.Literal> valueList;
+
+        public Insert(String tableName, List<Expr.Literal> valueList) {
+            this.tableName = tableName;
+            this.valueList = valueList;
+        }
+
+        @Override
+        public <T> T accept(StmtVisitor<T> v) {
+            return v.visit(this);
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (o == null) return false;
+            if (o.getClass() != this.getClass()) return false;
+            Stmt.Insert other = (Stmt.Insert) o;
+            return this.tableName.equals(other.tableName) &&
+                    this.valueList.equals(other.valueList);
+        }
+    }
 }

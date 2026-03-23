@@ -50,7 +50,7 @@ public class TableTests {
     @Test
     public void testFilter() {
         // Filter for students with age >= 25
-        Table result = students.filter(row -> Integer.parseInt(row.getValue("age")) >= 25);
+        Table result = students.filter((id, row) -> Integer.parseInt(row.getValue("age")) >= 25);
 
         List<String> names = result.getRowValues().stream()
                 .map(row -> row.getValue("name"))
@@ -63,7 +63,7 @@ public class TableTests {
 
     @Test
     public void filterNoRowsMatch() {
-        Table result = students.filter(row -> false);
+        Table result = students.filter((id, row) -> false);
         assertEquals(0, result.getRowValues().size());
         assertEquals(List.of("name", "age", "mark"), result.getColNames());
     }
@@ -85,7 +85,7 @@ public class TableTests {
     @Test
     public void testFilterThenProject() {
         Table result = students
-                .filter(row -> Integer.parseInt(row.getValue("age")) >= 25)
+                .filter((id, row) -> Integer.parseInt(row.getValue("age")) >= 25)
                 .project(List.of("name", "mark"));
 
         assertEquals(List.of("name", "mark"), result.getColNames());

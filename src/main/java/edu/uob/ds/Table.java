@@ -1,7 +1,7 @@
 package edu.uob.ds;
 
 import java.util.*;
-import java.util.function.Predicate;
+import java.util.function.BiPredicate;
 
 public class Table {
     private ArrayList<String> cols;
@@ -21,6 +21,16 @@ public class Table {
         cols.add(colName);
     }
 
+    public void dropCol(String attributeName) {
+        if (!cols.contains(attributeName)) {
+            throw new IllegalArgumentException("Column does not exist: " + attributeName);
+        }
+        cols.remove(attributeName);
+        for (Row row : rows.values()) {
+            row.removeValue(attributeName);
+        }
+    }
+
     public void addRow(int id, Row row) {
         rows.put(id, row);
         nextId = Math.max(nextId, id + 1);
@@ -29,6 +39,8 @@ public class Table {
     public Row getRow(int id) {
         return rows.get(id);
     }
+
+    public int getNextId() { return nextId; }
 
     public Set<Integer> getRowIds() { return rows.keySet(); }
 
@@ -40,7 +52,7 @@ public class Table {
         return cols;
     }
 
-    public Table filter(Predicate<Row> predicate) {
+    public Table filter(BiPredicate<Integer, Row> predicate) {
         /*
          * Returns a new table containing only the rows that satisfy the given predicate.
          * The original table is not modified. Original row IDs are preserved in the result.
@@ -59,7 +71,7 @@ public class Table {
             int id = entry.getKey();
             Row row = entry.getValue();
 
-            if (predicate.test(row)) {
+            if (predicate.test(id, row)) {
                 result.rows.put(id, new Row(row.getValues()));
                 result.nextId = Math.max(result.nextId, id + 1);
             }
@@ -78,14 +90,16 @@ public class Table {
          *   Table nameAndAge = students.project(List.of("name", "age"));
          */
         for (String col : selectedCols) {
-            if (!cols.contains(col)) {
+            if (!col.equals("id") && !cols.contains(col)) {
                 throw new IllegalArgumentException("Column not found: " + col);
             }
         }
 
         Table result = new Table();
         for (String col : selectedCols) {
-            result.addCol(col);
+            if (!col.equals("id")) {
+                result.addCol(col);
+            }
         }
 
         for (Map.Entry<Integer, Row> entry : rows.entrySet()) {
@@ -94,7 +108,9 @@ public class Table {
 
             Row projected = new Row();
             for (String col : selectedCols) {
-                projected.setValue(col, row.getValue(col));
+                if (!col.equals("id")) {
+                    projected.setValue(col, row.getValue(col));
+                }
             }
 
             result.rows.put(id, projected);

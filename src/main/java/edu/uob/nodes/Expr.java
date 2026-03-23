@@ -61,9 +61,9 @@ public abstract class Expr {
     }
 
     public static class Literal extends Expr {
-        public final Object value;
+        public final String value;
 
-        public Literal(Object value) {
+        public Literal(String value) {
             this.value = value;
         }
 

@@ -62,7 +62,7 @@ public class ParserTests {
             new Expr.Binary(
                 new Expr.Attr("age"),
                 Expr.Binary.Op.GTE,
-                new Expr.Literal(25)
+                new Expr.Literal("25")
             ),
             Expr.Binary.Op.AND,
             new Expr.Binary(

@@ -31,8 +31,9 @@ public class Parser {
             case CREATE   -> parseCreate();
             case DROP     -> parseDrop();
             case ALTER    -> parseAlter();
+            case INSERT   -> parseInsert();
             case SELECT   -> parseSelect();
-            default -> throw new ParseException(
+            default       -> throw new ParseException(
                     "Expected a command keyword, got " + t.toString()
             );
         };
@@ -152,6 +153,24 @@ public class Parser {
         return new Stmt.Alter(tableName, altType, attributeName);
     }
 
+    private Stmt parseInsert() {
+        /*
+         * INSERT INTO:
+         * Stmt.Insert
+         * -> String tableName
+         * -> List<Expr.Literal> valueList
+         */
+        stream.expect(Token.TokenType.INSERT);
+        stream.expect(Token.TokenType.INTO);
+        String tableName = parseIdentifier();
+        stream.expect(Token.TokenType.VALUES);
+        stream.expect(Token.TokenType.LPAREN);
+        List<Expr.Literal> valueList = parseValueList();
+        stream.expect(Token.TokenType.RPAREN);
+
+        return new Stmt.Insert(tableName, valueList);
+    }
+
     private Stmt parseSelect() {
         /*
          * SELECT:
@@ -198,24 +217,32 @@ public class Parser {
     private Expr parseCondition() {
         // Conditions are left associative in SQL
         // Conditions can optionally be surrounded by ()
-        if (stream.peek().getType() == Token.TokenType.LPAREN) {
-            stream.expect(Token.TokenType.LPAREN);
-            Expr condition = parseCondition();
-            stream.expect(Token.TokenType.RPAREN);
-            return condition;
-        }
 
         // Conditions can either be <FirstCondition> <BoolOperator> <SecondCondition>
         // or [AttributeName] <Comparator> [Value]
-        Expr left = parseComparison();
+        Expr left;
+        if (stream.peek().getType() == Token.TokenType.LPAREN) {
+            stream.expect(Token.TokenType.LPAREN);
+            left = parseCondition();
+            stream.expect(Token.TokenType.RPAREN);
+        }
+        else {
+            left = parseComparison();
+        }
 
         while(stream.peek().getType() == Token.TokenType.AND || stream.peek().getType() == Token.TokenType.OR) {
             Token op = stream.consume();
-            Expr right = parseComparison();
+            Expr right;
+            if (stream.peek().getType() == Token.TokenType.LPAREN) {
+                stream.expect(Token.TokenType.LPAREN);
+                right = parseCondition();
+                stream.expect(Token.TokenType.RPAREN);
+            } else {
+                right = parseComparison();
+            }
             if (op.getType() == Token.TokenType.AND) {
                 left = new Expr.Binary(left, Expr.Binary.Op.AND, right);
-            }
-            else {
+            } else {
                 left = new Expr.Binary(left, Expr.Binary.Op.OR, right);
             }
         }
@@ -257,62 +284,17 @@ public class Parser {
 
     private Expr.Literal parseLiteral() {
         Token t = stream.consume();
-        Object value = switch (t.getType()) {
-            case STRING_LITERAL  -> t.getValue(); // Value is String by default
-            case BOOLEAN_LITERAL -> Boolean.parseBoolean(t.getValue());
-            case FLOAT_LITERAL   -> Float.parseFloat(t.getValue());
-            case INTEGER_LITERAL -> Integer.parseInt(t.getValue());
-            case NULL            -> null;
-            default -> throw new ParseException("Expected a value literal, got " + t);
-        };
-        return new Expr.Literal(value);
+        return new Expr.Literal(t.getValue());
+    }
+
+    private List<Expr.Literal> parseValueList() {
+        List<Expr.Literal> valueList = new ArrayList<>();
+        valueList.add(parseLiteral());
+        while (stream.peek().getType() == Token.TokenType.COMMA) {
+            stream.expect(Token.TokenType.COMMA);
+            valueList.add(parseLiteral());
+        }
+
+        return valueList;
     }
 }
-
-//    private ASTNode parseCondition() {
-//        // Conditions are left associative
-//        ASTNode left = parseComparison();
-//        while (stream.peek().getType() == Token.TokenType.AND || stream.peek().getType() == Token.TokenType.OR) {
-//            Token op = stream.consume();
-//            ASTNode right = parseComparison();
-//            BranchNode.BranchType type = op.getType() == Token.TokenType.AND
-//                    ? BranchNode.BranchType.AND
-//                    : BranchNode.BranchType.OR;
-//            left = new BranchNode(type, List.of(left, right));
-//        }
-//        return left;
-//    }
-//
-//    private ASTNode parseComparison() {
-//        ASTNode attribute = parseIdentifier(LeafNode.LeafType.ATTRIBUTE_NAME);
-//        BranchNode.BranchType op = parseComparisonOperator();
-//        ASTNode value = parseValue();
-//        return new BranchNode(op, List.of(attribute, value));
-//    }
-//
-//    private BranchNode.BranchType parseComparisonOperator() {
-//        Token t = stream.consume();
-//        return switch (t.getType()) {
-//            case EQ   -> BranchNode.BranchType.EQ;
-//            case NEQ  -> BranchNode.BranchType.NEQ;
-//            case LT   -> BranchNode.BranchType.LT;
-//            case GT   -> BranchNode.BranchType.GT;
-//            case LTE  -> BranchNode.BranchType.LTE;
-//            case GTE  -> BranchNode.BranchType.GTE;
-//            case LIKE -> BranchNode.BranchType.LIKE;
-//            default   -> throw new ParseException("Expected a comparison operator, got " + t);
-//        };
-//    }
-//
-//    private ASTNode parseValue() {
-//        Token t = stream.consume();
-//        LeafNode.LeafType type = switch (t.getType()) {
-//            case STRING_LITERAL  -> LeafNode.LeafType.STRING_LITERAL;
-//            case BOOLEAN_LITERAL -> LeafNode.LeafType.BOOLEAN_LITERAL;
-//            case FLOAT_LITERAL   -> LeafNode.LeafType.FLOAT_LITERAL;
-//            case INTEGER_LITERAL -> LeafNode.LeafType.INTEGER_LITERAL;
-//            case NULL            -> LeafNode.LeafType.NULL;
-//            default -> throw new ParseException("Expected a value literal, got " + t);
-//        };
-//        return new LeafNode(type, t.getValue());
-//    }

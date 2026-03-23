@@ -22,6 +22,10 @@ public class  Row {
         return values.get(colName);
     }
 
+    public void removeValue(String colName) {
+        values.remove(colName);
+    }
+
     public HashMap<String, String> getValues() {
         return new HashMap<>(values);
     }

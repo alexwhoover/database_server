@@ -41,6 +41,98 @@ public class CommandTests {
         assertFalse(new File(server.getStorageFolder(), "mydb").exists());
     }
 
-//    @Test
-//    void testSelectCommand();
+    @Test
+    void testSelectWithWhere() {
+        // Setup
+        sendCommandToServer("CREATE DATABASE testdb;");
+        sendCommandToServer("USE testdb;");
+        sendCommandToServer("CREATE TABLE people (name, age, active);");
+        sendCommandToServer("INSERT INTO people VALUES ('Alice', 30, TRUE);");
+        sendCommandToServer("INSERT INTO people VALUES ('Bob', 17, FALSE);");
+        sendCommandToServer("INSERT INTO people VALUES ('Charlie', 25, TRUE);");
+        sendCommandToServer("INSERT INTO people VALUES ('Diana', 17, TRUE);");
+
+        // Basic equality
+        String response = sendCommandToServer("SELECT * FROM people WHERE age == 17;");
+        assertTrue(response.startsWith("[OK]"));
+        assertTrue(response.contains("Bob"));
+        assertTrue(response.contains("Diana"));
+        assertFalse(response.contains("Alice"));
+        assertFalse(response.contains("Charlie"));
+
+        // Greater than
+        response = sendCommandToServer("SELECT * FROM people WHERE age > 18;");
+        assertTrue(response.startsWith("[OK]"));
+        assertTrue(response.contains("Alice"));
+        assertTrue(response.contains("Charlie"));
+        assertFalse(response.contains("Bob"));
+        assertFalse(response.contains("Diana"));
+
+        // AND condition
+        response = sendCommandToServer("SELECT * FROM people WHERE age == 17 AND active == TRUE;");
+        assertTrue(response.startsWith("[OK]"));
+        assertTrue(response.contains("Diana"));
+        assertFalse(response.contains("Bob"));
+        assertFalse(response.contains("Alice"));
+
+        // OR condition
+        response = sendCommandToServer("SELECT * FROM people WHERE age == 30 OR age == 25;");
+        assertTrue(response.startsWith("[OK]"));
+        assertTrue(response.contains("Alice"));
+        assertTrue(response.contains("Charlie"));
+        assertFalse(response.contains("Bob"));
+        assertFalse(response.contains("Diana"));
+
+        // LIKE condition
+        response = sendCommandToServer("SELECT * FROM people WHERE name LIKE '%i%';");
+        assertTrue(response.startsWith("[OK]"));
+        assertTrue(response.contains("Alice"));
+        assertTrue(response.contains("Charlie"));
+        assertTrue(response.contains("Diana"));
+        assertFalse(response.contains("Bob"));
+
+        // Project specific columns with WHERE
+        response = sendCommandToServer("SELECT name FROM people WHERE age > 18;");
+        assertTrue(response.startsWith("[OK]"));
+        assertTrue(response.contains("Alice"));
+        assertTrue(response.contains("Charlie"));
+        assertFalse(response.contains("30")); // age column should not appear
+        assertFalse(response.contains("25"));
+
+        // No results
+        response = sendCommandToServer("SELECT * FROM people WHERE age == 999;");
+        assertTrue(response.startsWith("[OK]"));
+        assertFalse(response.contains("Alice"));
+        assertFalse(response.contains("Bob"));
+
+        // Nested: (age > 18 AND active == TRUE) OR age == 17
+        // Expects: Alice, Charlie (age > 18 AND active), Bob and Diana (age == 17)
+        response = sendCommandToServer("SELECT * FROM people WHERE (age > 18 AND active == TRUE) OR age == 17;");
+        assertTrue(response.startsWith("[OK]"));
+        assertTrue(response.contains("Alice"));
+        assertTrue(response.contains("Charlie"));
+        assertTrue(response.contains("Bob"));
+        assertTrue(response.contains("Diana"));
+
+        // Nested: age > 16 AND (active == TRUE AND name LIKE 'D%')
+        // Expects: only Diana (active, name starts with D, age > 16)
+        response = sendCommandToServer("SELECT * FROM people WHERE age > 16 AND (active == TRUE AND name LIKE 'D%');");
+        assertTrue(response.startsWith("[OK]"));
+        assertTrue(response.contains("Diana"));
+        assertFalse(response.contains("Alice"));
+        assertFalse(response.contains("Bob"));
+        assertFalse(response.contains("Charlie"));
+
+        // Nested: (age > 20 AND age < 28) OR (age == 17 AND active == FALSE)
+        // Expects: Charlie (25, in range) and Bob (17, inactive)
+        response = sendCommandToServer("SELECT * FROM people WHERE (age > 20 AND age < 28) OR (age == 17 AND active == FALSE);");
+        assertTrue(response.startsWith("[OK]"));
+        assertTrue(response.contains("Charlie"));
+        assertTrue(response.contains("Bob"));
+        assertFalse(response.contains("Alice"));
+        assertFalse(response.contains("Diana"));
+
+        // Cleanup
+        sendCommandToServer("DROP DATABASE testdb;");
+    }
 }
