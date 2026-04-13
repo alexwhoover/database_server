@@ -1,4 +1,4 @@
-package edu.uob;
+package edu.uob.blackbox;
 
 import org.junit.jupiter.api.Test;
 
