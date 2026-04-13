@@ -1,5 +1,6 @@
 package edu.uob.blackbox;
 
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -12,6 +13,13 @@ class TestCasesIllegalNames
    {
       db = new DBServerHarness();
       db.createMovieDatabase();
+   }
+
+   @AfterEach
+   void tearDown()
+   {
+      db.sendCommandAndIgnoreResponse("DROP DATABASE existing;");
+      db.dropCurrentDatabase();
    }
 
    @Test

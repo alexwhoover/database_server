@@ -13,4 +13,5 @@ public interface StmtVisitor<T> {
     T visit(Stmt.Insert stmt);
     T visit(Stmt.Delete stmt);
     T visit(Stmt.Update stmt);
+    T visit(Stmt.Join stmt);
 }

@@ -9,16 +9,19 @@ public class PredicateExprVisitor implements ExprVisitor<BiPredicate<Integer, Ro
 
     /*
      * Builds a RowEvaluator from a leaf node (Expr.Attr or Expr.Literal).
-     * This is called by Binary when it needs to compare two sides.
+     * Null row values (e.g. columns added after row insertion) are treated as "NULL".
      */
     private RowEvaluator buildEvaluator(Expr expr) {
         if (expr instanceof Expr.Attr attr) {
             if (attr.attrName.equals("id")) {
-                return (id, row) -> String.valueOf(id); // I know this is ugly, I'm going from String -> Integer -> String -> Double, new casting record!!
+                return (id, row) -> String.valueOf(id);
             }
-            return (id, row) -> row.getValue(attr.attrName);
+            return (id, row) -> {
+                String val = row.getValue(attr.attrName);
+                return val != null ? val : "NULL";
+            };
         } else if (expr instanceof Expr.Literal lit) {
-            return (id, row) -> lit.value; // Assumes no null values
+            return (id, row) -> lit.value;
         } else {
             throw new IllegalArgumentException("Expected Attr or Literal in comparison, got: " + expr.getClass());
         }
@@ -26,7 +29,6 @@ public class PredicateExprVisitor implements ExprVisitor<BiPredicate<Integer, Ro
 
     @Override
     public BiPredicate<Integer, Row> visit(Expr.Binary expr) {
-        // Recurse down Binary expressions
         if (expr.op == Expr.Binary.Op.AND) {
             BiPredicate<Integer, Row> left = expr.left.accept(this);
             BiPredicate<Integer, Row> right = expr.right.accept(this);
@@ -44,19 +46,35 @@ public class PredicateExprVisitor implements ExprVisitor<BiPredicate<Integer, Ro
         return switch (expr.op) {
             case EQ   -> (id, row) -> compare(left.evaluate(id, row), right.evaluate(id, row)) == 0;
             case NEQ  -> (id, row) -> compare(left.evaluate(id, row), right.evaluate(id, row)) != 0;
-            case LT   -> (id, row) -> compare(left.evaluate(id, row), right.evaluate(id, row)) < 0;
-            case GT   -> (id, row) -> compare(left.evaluate(id, row), right.evaluate(id, row)) > 0;
-            case LTE  -> (id, row) -> compare(left.evaluate(id, row), right.evaluate(id, row)) <= 0;
-            case GTE  -> (id, row) -> compare(left.evaluate(id, row), right.evaluate(id, row)) >= 0;
+            case LT   -> (id, row) -> {
+                String l = left.evaluate(id, row);
+                String r = right.evaluate(id, row);
+                if (areIncompatibleTypes(l, r)) return false;
+                return compare(l, r) < 0;
+            };
+            case GT   -> (id, row) -> {
+                String l = left.evaluate(id, row);
+                String r = right.evaluate(id, row);
+                if (areIncompatibleTypes(l, r)) return false;
+                return compare(l, r) > 0;
+            };
+            case LTE  -> (id, row) -> {
+                String l = left.evaluate(id, row);
+                String r = right.evaluate(id, row);
+                if (areIncompatibleTypes(l, r)) return false;
+                return compare(l, r) <= 0;
+            };
+            case GTE  -> (id, row) -> {
+                String l = left.evaluate(id, row);
+                String r = right.evaluate(id, row);
+                if (areIncompatibleTypes(l, r)) return false;
+                return compare(l, r) >= 0;
+            };
             case LIKE -> (id, row) -> likeMatch(left.evaluate(id, row), right.evaluate(id, row));
             default   -> throw new IllegalArgumentException("Unhandled op: " + expr.op);
         };
     }
 
-    /*
-     * Attr and Literal are not valid as standalone predicates.
-     * They should only appear as children of a Binary comparison node.
-     */
     @Override
     public BiPredicate<Integer, Row> visit(Expr.Attr expr) {
         throw new IllegalStateException("Attr node cannot be evaluated as a standalone predicate");
@@ -72,7 +90,6 @@ public class PredicateExprVisitor implements ExprVisitor<BiPredicate<Integer, Ro
      * falls back to lexicographic.
      */
     private int compare(String a, String b) {
-        // Dangerous casting, beware!
         try {
             double da = Double.parseDouble(a);
             double db = Double.parseDouble(b);
@@ -83,16 +100,27 @@ public class PredicateExprVisitor implements ExprVisitor<BiPredicate<Integer, Ro
     }
 
     /*
-     * SQL LIKE: supports % (any sequence) and _ (any single char).
-     * Converts the pattern to a regex.
+     * Returns true if one value is numeric and the other is not.
+     * Used to short-circuit ordered comparisons on incompatible types.
+     */
+    private boolean areIncompatibleTypes(String a, String b) {
+        return isNumeric(a) != isNumeric(b);
+    }
+
+    private boolean isNumeric(String s) {
+        if (s == null) return false;
+        try {
+            Double.parseDouble(s);
+            return true;
+        } catch (NumberFormatException e) {
+            return false;
+        }
+    }
+
+    /*
+     * LIKE: checks whether value contains pattern as a substring.
      */
     private boolean likeMatch(String value, String pattern) {
-        String regex = "^" + pattern
-                .replace("\\", "\\\\")
-                .replace(".", "\\.")
-                .replace("%", ".*")
-                .replace("_", ".")
-                + "$";
-        return value.matches(regex);
+        return value.contains(pattern);
     }
 }

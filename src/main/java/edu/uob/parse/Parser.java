@@ -35,6 +35,7 @@ public class Parser {
             case SELECT   -> parseSelect();
             case UPDATE   -> parseUpdate();
             case DELETE   -> parseDelete();
+            case JOIN     -> parseJoin();
             default       -> throw new ParseException(
                     "Expected a command keyword, got " + t.toString()
             );
@@ -230,6 +231,26 @@ public class Parser {
         return new Stmt.Delete(tableName, condition);
     }
 
+    private Stmt parseJoin() {
+        /*
+         * JOIN [TableName] AND [TableName] ON [AttributeName] AND [AttributeName]
+         * Stmt.Join
+         * -> String table1Name
+         * -> String table2Name
+         * -> String attr1Name
+         * -> String attr2Name
+         */
+        stream.expect(Token.TokenType.JOIN);
+        String table1 = parseIdentifier();
+        stream.expect(Token.TokenType.AND);
+        String table2 = parseIdentifier();
+        stream.expect(Token.TokenType.ON);
+        String attr1 = parseIdentifier();
+        stream.expect(Token.TokenType.AND);
+        String attr2 = parseIdentifier();
+        return new Stmt.Join(table1, table2, attr1, attr2);
+    }
+
     // ---- PRIVATE HELPERS ----
     private String parseIdentifier() {
         Token t = stream.expect(Token.TokenType.IDENTIFIER);
@@ -321,7 +342,13 @@ public class Parser {
 
     private Expr.Literal parseLiteral() {
         Token t = stream.consume();
-        return new Expr.Literal(t.getValue());
+        String value = switch (t.getType()) {
+            case TRUE  -> "TRUE";
+            case FALSE -> "FALSE";
+            case NULL  -> "NULL";
+            default    -> t.getValue();
+        };
+        return new Expr.Literal(value);
     }
 
     private List<Expr.Literal> parseValueList() {

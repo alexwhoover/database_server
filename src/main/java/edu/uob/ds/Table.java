@@ -139,7 +139,8 @@ public class Table {
             int id = entry.getKey();
             sb.append(id);
             for (String col : cols) {
-                sb.append("\t").append(entry.getValue().getValue(col));
+                String val = entry.getValue().getValue(col);
+                sb.append("\t").append(val != null ? val : "NULL");
             }
             sb.append("\n");
         }

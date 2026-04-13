@@ -13,6 +13,7 @@ class TestCasesPersistence
       db = new DBServerHarness();
       db.sendCommandAndIgnoreResponse("USE " + dbname + ";");
       db.sendCommandAndCheckResponse("SELECT * FROM actors;", new String[]{"Toni","James","Hugh","Emma"}, new String[]{}, "Testing that data persists after a server restart");
+      db.sendCommandAndIgnoreResponse("DROP DATABASE " + dbname + ";");
    }
 
    @Test
@@ -31,6 +32,7 @@ class TestCasesPersistence
       db.sendCommandAndIgnoreResponse("USE " + dbname + ";");
       db.sendCommandAndIgnoreResponse("INSERT INTO movies VALUES ('Weddings', 'Comedy');");
       db.sendCommandAndCheckResponse("SELECT id FROM movies WHERE name == 'Weddings';", new String[]{"[OK]"}, previousIDs, "Testing that server does not recycle IDs event after deletion of rows and server restart");
+      db.sendCommandAndIgnoreResponse("DROP DATABASE " + dbname + ";");
    }
 
 }

@@ -245,4 +245,34 @@ public abstract class Stmt {
                     && Objects.equals(this.condition, other.condition);
         }
     }
+
+    public static class Join extends Stmt {
+        public final String table1Name;
+        public final String table2Name;
+        public final String attr1Name;
+        public final String attr2Name;
+
+        public Join(String table1Name, String table2Name, String attr1Name, String attr2Name) {
+            this.table1Name = table1Name;
+            this.table2Name = table2Name;
+            this.attr1Name = attr1Name;
+            this.attr2Name = attr2Name;
+        }
+
+        @Override
+        public <T> T accept(StmtVisitor<T> v) {
+            return v.visit(this);
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (o == null) return false;
+            if (o.getClass() != this.getClass()) return false;
+            Stmt.Join other = (Stmt.Join) o;
+            return this.table1Name.equals(other.table1Name)
+                    && this.table2Name.equals(other.table2Name)
+                    && this.attr1Name.equals(other.attr1Name)
+                    && this.attr2Name.equals(other.attr2Name);
+        }
+    }
 }

@@ -1,5 +1,6 @@
 package edu.uob;
 
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -17,6 +18,12 @@ public class CommandTests {
         server = new DBServer();
     }
 
+    @AfterEach
+    void tearDown() {
+        sendCommandToServer("DROP DATABASE mydb;");
+        sendCommandToServer("DROP DATABASE testdb;");
+    }
+
     private String sendCommandToServer(String command) {
         // Try to send a command to the server - this call will timeout if it takes too long (in case the server enters an infinite loop)
         return assertTimeoutPreemptively(Duration.ofMillis(1000), () -> { return server.handleCommand(command);},
@@ -25,13 +32,17 @@ public class CommandTests {
 
     @Test
     void testUse() {
+        sendCommandToServer("DROP DATABASE mydb;");
+        sendCommandToServer("CREATE DATABASE mydb;");
         String response = sendCommandToServer("USE mydb;");
         assertEquals("[OK]", response);
         assertEquals("mydb", server.getDatabaseName());
+        sendCommandToServer("DROP DATABASE mydb;");
     }
 
     @Test
     void testCreateDropDatabase() {
+        sendCommandToServer("DROP DATABASE mydb;");
         String response = sendCommandToServer("CREATE DATABASE mydb;");
         assertEquals("[OK]", response);
         assertTrue(new File(server.getStorageFolder(), "mydb").exists());
@@ -44,6 +55,7 @@ public class CommandTests {
     @Test
     void testSelectWithWhere() {
         // Setup
+        sendCommandToServer("DROP DATABASE testdb;");
         sendCommandToServer("CREATE DATABASE testdb;");
         sendCommandToServer("USE testdb;");
         sendCommandToServer("CREATE TABLE people (name, age, active);");
@@ -83,8 +95,8 @@ public class CommandTests {
         assertFalse(response.contains("Bob"));
         assertFalse(response.contains("Diana"));
 
-        // LIKE condition
-        response = sendCommandToServer("SELECT * FROM people WHERE name LIKE '%i%';");
+        // LIKE condition (substring match, no wildcard syntax)
+        response = sendCommandToServer("SELECT * FROM people WHERE name LIKE 'i';");
         assertTrue(response.startsWith("[OK]"));
         assertTrue(response.contains("Alice"));
         assertTrue(response.contains("Charlie"));
@@ -116,7 +128,7 @@ public class CommandTests {
 
         // Nested: age > 16 AND (active == TRUE AND name LIKE 'D%')
         // Expects: only Diana (active, name starts with D, age > 16)
-        response = sendCommandToServer("SELECT * FROM people WHERE age > 16 AND (active == TRUE AND name LIKE 'D%');");
+        response = sendCommandToServer("SELECT * FROM people WHERE age > 16 AND (active == TRUE AND name LIKE 'Di');");
         assertTrue(response.startsWith("[OK]"));
         assertTrue(response.contains("Diana"));
         assertFalse(response.contains("Alice"));
@@ -138,6 +150,7 @@ public class CommandTests {
 
     @Test
     void testDelete() {
+        sendCommandToServer("DROP DATABASE testdb;");
         sendCommandToServer("CREATE DATABASE testdb;");
         sendCommandToServer("USE testdb;");
         sendCommandToServer("CREATE TABLE people (name, age, active);");
@@ -170,6 +183,7 @@ public class CommandTests {
 
     @Test
     void testUpdate() {
+        sendCommandToServer("DROP DATABASE testdb;");
         sendCommandToServer("CREATE DATABASE testdb;");
         sendCommandToServer("USE testdb;");
         sendCommandToServer("CREATE TABLE people (name, age);");

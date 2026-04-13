@@ -1,5 +1,6 @@
 package edu.uob.blackbox;
 
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -13,6 +14,12 @@ class TestCasesDelete
    {
       db = new DBServerHarness();
       dbName = db.createMovieDatabase();
+   }
+
+   @AfterEach
+   void tearDown()
+   {
+      db.dropCurrentDatabase();
    }
 
    @Test

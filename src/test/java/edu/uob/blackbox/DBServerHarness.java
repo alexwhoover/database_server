@@ -14,16 +14,26 @@ class DBServerHarness
    String bar = "\n" + reportTag + "---------------------------------------------------------------------------\033[0m\n";
 
    DBServer server;
+   String currentDatabaseName;
 
    public DBServerHarness()
    {
       server = new DBServer();
    }
 
+   void dropCurrentDatabase()
+   {
+      if (currentDatabaseName != null) {
+         sendCommandAndIgnoreResponse("DROP DATABASE " + currentDatabaseName + ";");
+         currentDatabaseName = null;
+      }
+   }
+
    String createMovieDatabase()
    {
       String randomName = "";
       for(int i=0; i<6 ;i++) randomName += (char)( 97 + (Math.random() * 25.0));
+      currentDatabaseName = randomName;
       sendCommandAndIgnoreResponse("CREATE DATABASE " + randomName + ";");
       sendCommandAndIgnoreResponse("USE " + randomName + ";");
 
