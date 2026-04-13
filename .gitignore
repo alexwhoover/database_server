@@ -1,2 +1,32 @@
 *.xml
 *.iml
+
+# Maven build output
+target/
+
+.claude/
+
+# IntelliJ IDEA
+.idea/
+*.iml
+
+# VS Code
+.vscode/
+
+# Eclipse
+.classpath
+.project
+.settings/
+
+# Compiled class files
+*.class
+
+# Log files
+*.log
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Test database files generated during testing
+databases/
