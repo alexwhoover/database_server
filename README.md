@@ -24,7 +24,7 @@ A from-scratch SQL parser and query execution engine written in Java. Raw SQL st
 
 This project implements a subset of SQL from first principles: a hand-written lexer, a recursive descent parser, a typed AST, and a visitor-based execution engine. Queries are served over a TCP socket and run against a tab-separated flat-file store, with support for `SELECT`, `INSERT`, `UPDATE`, `DELETE`, `CREATE`, `DROP`, `ALTER`, and `JOIN`.
 
-The main design goals were correctness, type safety at the AST layer, and a clean separation between parsing and execution - achieved through a dual-visitor architecture over two independent node hierarchies.
+The main design goals were correctness and a clean separation between parsing and execution - achieved through a dual-visitor architecture over two independent node hierarchies.
 
 ---
 
@@ -58,7 +58,7 @@ Each sub-parser consumes exactly the tokens defined by the grammar for that stat
 ### Custom AST Architecture
 
 The AST is split across two independent hierarchies, implemented as **static inner classes** on abstract base types.
-
+![AST-class-diagram](https://github.com/user-attachments/assets/4a15b9a5-eff3-4878-a219-3670aa742fa8)
 #### `Stmt` - statement nodes
 
 Represents a complete SQL command. All fields are `public final`, making nodes immutable. There are eleven concrete subtypes, one per supported command:
@@ -134,17 +134,17 @@ BiPredicate<Integer, Row> predicate = stmt.condition.accept(new PredicateExprVis
 Table filtered = raw.filter(predicate);
 ```
 
-The upside of this architecture is that adding a new statement type is pretty mechanical: add a `Stmt` subclass, add an overload to `StmtVisitor`, implement it in `ExecuteStmtVisitor`. The parser and expression layers don't need to change.
+The upside of this architecture is that adding a new statement type is pretty mechanical: add a `Stmt` subclass, add an overload to `StmtVisitor`, implement it in `ExecuteStmtVisitor`.
 
 ---
 
 ## Engineering Challenges
 
-### From a Generic Tree to a Typed Hierarchy
+### Generic Tree to a Typed Hierarchy
 
 The initial design used a generic `Branch`/`Leaf` tree - a natural first approach that mirrors the recursive structure of a grammar. Every node was the same type, with children stored in untyped lists. This was quick to get working, but it became painful in the execution layer: every handler had to cast, inspect string tags, and manually check child counts, with no compile-time guarantee that a node was well-formed.
 
-The real issue was that `Branch`/`Leaf` conflated two structurally different things: **statements** (which describe a specific command and carry named, typed fields) and **expressions** (which form a recursive predicate tree). A `SELECT` node and a `WHERE` subtree have nothing in common structurally, but both were shoehorned into the same representation.
+The real issue was that `Branch`/`Leaf` conflated two structurally different things: **statements** (which describe a specific command and carry named, typed fields) and **expressions** (which form a recursive predicate tree). A `SELECT` node and a `WHERE` subtree have nothing in common structurally, but both were put into the same representation.
 
 The fix was to split them into two dedicated hierarchies:
 
