@@ -26,6 +26,8 @@ This project implements a subset of SQL from first principles: a hand-written le
 
 The main design goals were correctness and a clean separation between parsing and execution - achieved through a dual-visitor architecture over two independent node hierarchies.
 
+The exact BNF grammar for the subset of SQL this project uses can be found in assets/BNF.txt.
+
 ---
 
 ## Key Technical Features
