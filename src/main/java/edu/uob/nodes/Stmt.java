@@ -36,6 +36,9 @@ public abstract class Stmt {
                     && this.attributeList.equals(other.attributeList)
                     && Objects.equals(this.condition, other.condition);
         }
+
+        @Override
+        public int hashCode() { return Objects.hash(tableName, attributeList, condition); }
     }
 
     public static class Use extends Stmt {
@@ -57,6 +60,9 @@ public abstract class Stmt {
             Stmt.Use other = (Stmt.Use) o;
             return this.dbName.equals(other.dbName);
         }
+
+        @Override
+        public int hashCode() { return Objects.hash(dbName); }
     }
 
     public static class CreateDatabase extends Stmt {
@@ -76,6 +82,9 @@ public abstract class Stmt {
             Stmt.CreateDatabase other = (Stmt.CreateDatabase) o;
             return this.dbName.equals(other.dbName);
         }
+
+        @Override
+        public int hashCode() { return Objects.hash(dbName); }
     }
 
     public static class DropDatabase extends Stmt {
@@ -95,6 +104,9 @@ public abstract class Stmt {
             Stmt.DropDatabase other = (Stmt.DropDatabase) o;
             return this.dbName.equals(other.dbName);
         }
+
+        @Override
+        public int hashCode() { return Objects.hash(dbName); }
     }
 
     public static class CreateTable extends Stmt {
@@ -119,6 +131,9 @@ public abstract class Stmt {
             return this.tableName.equals(other.tableName)
                     && this.attributeList.equals(other.attributeList);
         }
+
+        @Override
+        public int hashCode() { return Objects.hash(tableName, attributeList); }
     }
 
     public static class DropTable extends Stmt {
@@ -138,6 +153,9 @@ public abstract class Stmt {
             Stmt.DropTable other = (Stmt.DropTable) o;
             return this.tableName.equals(other.tableName);
         }
+
+        @Override
+        public int hashCode() { return Objects.hash(tableName); }
     }
 
     public static class Alter extends Stmt {
@@ -169,6 +187,9 @@ public abstract class Stmt {
                     this.altType == other.altType &&
                     this.attributeName.equals(other.attributeName);
         }
+
+        @Override
+        public int hashCode() { return Objects.hash(tableName, altType, attributeName); }
     }
 
     public static class Insert extends Stmt {
@@ -193,6 +214,9 @@ public abstract class Stmt {
             return this.tableName.equals(other.tableName) &&
                     this.valueList.equals(other.valueList);
         }
+
+        @Override
+        public int hashCode() { return Objects.hash(tableName, valueList); }
     }
 
     public static class Update extends Stmt {
@@ -220,6 +244,9 @@ public abstract class Stmt {
                     && this.nameValueList.equals(other.nameValueList)
                     && Objects.equals(this.condition, other.condition);
         }
+
+        @Override
+        public int hashCode() { return Objects.hash(tableName, nameValueList, condition); }
     }
 
     public static class Delete extends Stmt {
@@ -244,6 +271,9 @@ public abstract class Stmt {
             return this.tableName.equals(other.tableName)
                     && Objects.equals(this.condition, other.condition);
         }
+
+        @Override
+        public int hashCode() { return Objects.hash(tableName, condition); }
     }
 
     public static class Join extends Stmt {
@@ -274,5 +304,8 @@ public abstract class Stmt {
                     && this.attr1Name.equals(other.attr1Name)
                     && this.attr2Name.equals(other.attr2Name);
         }
+
+        @Override
+        public int hashCode() { return Objects.hash(table1Name, table2Name, attr1Name, attr2Name); }
     }
 }
