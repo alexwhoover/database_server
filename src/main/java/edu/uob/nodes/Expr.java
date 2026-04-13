@@ -1,6 +1,7 @@
 package edu.uob.nodes;
 
 import edu.uob.visitors.ExprVisitor;
+import java.util.Objects;
 
 public abstract class Expr {
     public abstract <T> T accept(ExprVisitor<T> v);
@@ -36,6 +37,9 @@ public abstract class Expr {
                     && this.op == other.op
                     && this.right.equals(other.right);
         }
+
+        @Override
+        public int hashCode() { return Objects.hash(left, op, right); }
     }
 
     public static class Attr extends Expr {
@@ -58,6 +62,9 @@ public abstract class Expr {
 
             return this.attrName.equals(other.attrName);
         }
+
+        @Override
+        public int hashCode() { return Objects.hash(attrName); }
     }
 
     public static class Literal extends Expr {
@@ -80,5 +87,8 @@ public abstract class Expr {
 
             return this.value.equals(other.value);
         }
+
+        @Override
+        public int hashCode() { return Objects.hash(value); }
     }
 }
